@@ -2,7 +2,7 @@
   "name": "errx",
   "type": "module",
   "version": "0.1.0",
-  "packageManager": "pnpm@10.10.0",
+  "packageManager": "pnpm@10.11.0",
   "description": "Zero dependency library to capture and parse stack traces in Node, Bun and Deno",
   "license": "MIT",
   "repository": "unjs/errx",
