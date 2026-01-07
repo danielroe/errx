@@ -32,33 +32,33 @@ describe('errx', () => {
         },
         {
           "column": "<number>",
-          "function": "runTest",
+          "function": undefined,
+          "line": "<number>",
+          "source": "@vitest/runner/dist/index.js",
+        },
+        {
+          "column": undefined,
+          "function": "new Promise",
+          "line": undefined,
+          "source": "<anonymous>",
+        },
+        {
+          "column": "<number>",
+          "function": "runWithTimeout",
           "line": "<number>",
           "source": "@vitest/runner/dist/index.js",
         },
         {
           "column": "<number>",
-          "function": "processTicksAndRejections",
-          "line": "<number>",
-          "source": "node:internal/process/task_queues",
-        },
-        {
-          "column": "<number>",
-          "function": "runSuite",
+          "function": undefined,
           "line": "<number>",
           "source": "@vitest/runner/dist/index.js",
         },
         {
           "column": "<number>",
-          "function": "runSuite",
+          "function": "Traces.$",
           "line": "<number>",
-          "source": "@vitest/runner/dist/index.js",
-        },
-        {
-          "column": "<number>",
-          "function": "runFiles",
-          "line": "<number>",
-          "source": "@vitest/runner/dist/index.js",
+          "source": "vitest/dist/chunks/traces.U4xDYhzZ.js",
         },
       ]
     `)
