@@ -27,7 +27,7 @@ importers:
         specifier: latest
         version: 10.0.2(jiti@2.6.1)
       nano-staged:
-        specifier: ^0.9.0
+        specifier: 0.9.0
         version: 0.9.0
       simple-git-hooks:
         specifier: latest
