@@ -58,7 +58,7 @@ describe('errx', () => {
           "column": "<number>",
           "function": "Traces.$",
           "line": "<number>",
-          "source": "vitest/dist/chunks/traces.U4xDYhzZ.js",
+          "source": "vitest/dist/chunks/traces.CCmnQaNT.js",
         },
       ]
     `)
