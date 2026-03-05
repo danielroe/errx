@@ -51,9 +51,9 @@ Published under [MIT License](./LICENCE).
 
 <!-- Badges -->
 
-[npm-version-src]: https://img.shields.io/npm/v/errx?style=flat-square
-[npm-version-href]: https://npmjs.com/package/errx
-[npm-downloads-src]: https://img.shields.io/npm/dm/errx?style=flat-square
+[npm-version-src]: https://npmx.dev/api/registry/badge/version/errx
+[npm-version-href]: https://npmx.dev/package/errx
+[npm-downloads-src]: https://npmx.dev/api/registry/badge/downloads/errx
 [npm-downloads-href]: https://npm.chart.dev/errx
 [github-actions-src]: https://img.shields.io/github/actions/workflow/status/unjs/errx/ci.yml?branch=main&style=flat-square
 [github-actions-href]: https://github.com/unjs/errx/actions?query=workflow%3Aci
