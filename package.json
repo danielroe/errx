@@ -41,9 +41,6 @@
     "vite": "latest",
     "vitest": "latest"
   },
-  "resolutions": {
-    "errx": "link:."
-  },
   "simple-git-hooks": {
     "pre-commit": "npx nano-staged"
   },
