@@ -1,6 +1,9 @@
 packages:
   - playground
 
+allowBuilds:
+  esbuild: false
+  simple-git-hooks: true
 
 overrides:
   errx: "link:."
