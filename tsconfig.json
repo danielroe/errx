@@ -7,6 +7,9 @@
     "moduleDetection": "force",
     "module": "preserve",
     "resolveJsonModule": true,
+    "types": [
+      "node"
+    ],
     "strict": true,
     "noImplicitOverride": true,
     "noUncheckedIndexedAccess": true,
