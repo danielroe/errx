@@ -8,16 +8,15 @@
   "repository": "unjs/errx",
   "sideEffects": false,
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
   },
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.mts",
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "unbuild",
+    "build": "tsdown",
     "dev": "vitest dev",
     "lint": "eslint . --fix",
     "prepare": "simple-git-hooks",
@@ -36,8 +35,8 @@
     "eslint": "latest",
     "nano-staged": "0.9.0",
     "simple-git-hooks": "latest",
+    "tsdown": "0.22.0",
     "typescript": "latest",
-    "unbuild": "latest",
     "vite": "latest",
     "vitest": "latest"
   },
@@ -48,5 +47,11 @@
     "*.{js,ts,mjs,cjs,json,.*rc}": [
       "pnpm eslint --fix"
     ]
+  },
+  "publishConfig": {
+    "exports": {
+      ".": "./dist/index.mjs",
+      "./package.json": "./package.json"
+    }
   }
 }

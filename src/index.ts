@@ -9,7 +9,7 @@ export interface ParsedTrace {
   source: string
 }
 
-export function captureRawStackTrace() {
+export function captureRawStackTrace(): string | undefined {
   if (!Error.captureStackTrace) {
     return
   }
@@ -20,13 +20,13 @@ export function captureRawStackTrace() {
   return stack.stack
 }
 
-export function captureStackTrace() {
+export function captureStackTrace(): ParsedTrace[] {
   const stack = captureRawStackTrace()
 
   return stack ? parseRawStackTrace(stack) : []
 }
 
-export function parseRawStackTrace(stacktrace: string) {
+export function parseRawStackTrace(stacktrace: string): ParsedTrace[] {
   const trace: ParsedTrace[] = []
   for (const line of stacktrace.split('\n')) {
     const parsed = LINE_RE.exec(line)?.groups as Partial<Record<keyof ParsedTrace, string>> | undefined
