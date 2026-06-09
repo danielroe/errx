@@ -2,7 +2,7 @@
   "name": "errx",
   "type": "module",
   "version": "0.1.0",
-  "packageManager": "pnpm@11.1.2",
+  "packageManager": "pnpm@11.5.2",
   "description": "Zero dependency library to capture and parse stack traces in Node, Bun and Deno",
   "license": "MIT",
   "repository": "unjs/errx",
@@ -33,7 +33,7 @@
     "eslint": "latest",
     "nano-staged": "1.0.2",
     "simple-git-hooks": "latest",
-    "tsdown": "0.22.0",
+    "tsdown": "0.22.2",
     "typescript": "latest",
     "vite": "latest",
     "vitest": "latest"

@@ -30,8 +30,8 @@ importers:
         specifier: latest
         version: 2.13.1
       tsdown:
-        specifier: 0.22.0
-        version: 0.22.0(typescript@6.0.3)
+        specifier: 0.22.2
+        version: 0.22.2(typescript@6.0.3)
       typescript:
         specifier: latest
         version: 6.0.3
@@ -1781,14 +1781,14 @@ packages:
     peerDependencies:
       typescript: '>=4.8.4'
 
-  tsdown@0.22.0:
-    resolution: {integrity: sha512-FgW0hHb27nGQA/+F3d5+U9wKXkfilk9DVkc5+7x/ZqF03g+Hoz/eeApT32jqxATt9eRoR+1jxk7MUMON+O4CXw==}
+  tsdown@0.22.2:
+    resolution: {integrity: sha512-VX9gsyKXsTnBZjnIM4jsHl9aRv+GfgkE/k1hQslilaBfZMlaw3JuGR+6yhiU0QxWBtOCDnTjwOSoXzgB7Rr50g==}
     engines: {node: ^22.18.0 || >=24.0.0}
     hasBin: true
     peerDependencies:
       '@arethetypeswrong/core': ^0.18.1
-      '@tsdown/css': 0.22.0
-      '@tsdown/exe': 0.22.0
+      '@tsdown/css': 0.22.2
+      '@tsdown/exe': 0.22.2
       '@vitejs/devtools': '*'
       publint: ^0.3.8
       tsx: '*'
@@ -3840,7 +3840,7 @@ snapshots:
     dependencies:
       typescript: 6.0.3
 
-  tsdown@0.22.0(typescript@6.0.3):
+  tsdown@0.22.2(typescript@6.0.3):
     dependencies:
       ansis: 4.3.1
       cac: 7.0.0
