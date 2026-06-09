@@ -31,7 +31,7 @@
     "@types/node": "latest",
     "@vitest/coverage-v8": "latest",
     "eslint": "latest",
-    "nano-staged": "0.9.0",
+    "nano-staged": "1.0.2",
     "simple-git-hooks": "latest",
     "tsdown": "0.22.0",
     "typescript": "latest",
