@@ -22,19 +22,19 @@ describe('errx', () => {
           "column": "<number>",
           "function": undefined,
           "line": "<number>",
-          "source": "@vitest/runner/dist/index.js",
+          "source": "@vitest/runner/dist/chunk-artifact.js",
         },
         {
           "column": "<number>",
           "function": undefined,
           "line": "<number>",
-          "source": "@vitest/runner/dist/index.js",
+          "source": "@vitest/runner/dist/chunk-artifact.js",
         },
         {
           "column": "<number>",
           "function": undefined,
           "line": "<number>",
-          "source": "@vitest/runner/dist/index.js",
+          "source": "@vitest/runner/dist/chunk-artifact.js",
         },
         {
           "column": undefined,
@@ -44,21 +44,21 @@ describe('errx', () => {
         },
         {
           "column": "<number>",
-          "function": "runWithTimeout",
+          "function": "runWithCancel",
           "line": "<number>",
-          "source": "@vitest/runner/dist/index.js",
+          "source": "@vitest/runner/dist/chunk-artifact.js",
         },
         {
           "column": "<number>",
           "function": undefined,
           "line": "<number>",
-          "source": "@vitest/runner/dist/index.js",
+          "source": "@vitest/runner/dist/chunk-artifact.js",
         },
         {
-          "column": "<number>",
-          "function": "Traces.$",
-          "line": "<number>",
-          "source": "vitest/dist/chunks/traces.CCmnQaNT.js",
+          "column": undefined,
+          "function": "new Promise",
+          "line": undefined,
+          "source": "<anonymous>",
         },
       ]
     `)

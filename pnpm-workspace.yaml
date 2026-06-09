@@ -1,3 +1,7 @@
+shellEmulator: true
+
+trustPolicy: no-downgrade
+
 packages:
   - playground
 
@@ -6,4 +10,4 @@ allowBuilds:
   simple-git-hooks: true
 
 overrides:
-  errx: "link:."
+  errx: 'link:.'
