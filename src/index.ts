@@ -1,5 +1,6 @@
 const IS_ABSOLUTE_RE = /^[/\\](?![/\\])|^[/\\]{2}(?!\.)|^[a-z]:[/\\]/i
-const LINE_RE = /^\s+at (?:(?<function>[^)]+) \()?(?<source>[^)]+)\)?$/u
+const LINE_WITH_FUNCTION_RE = /^\s+at (?<function>.+) \((?<source>[^)]+)\)$/u
+const LINE_WITHOUT_FUNCTION_RE = /^\s+at (?<source>\S+)$/u
 const SOURCE_RE = /^(?<source>.+):(?<line>\d+):(?<column>\d+)$/u
 
 export interface ParsedTrace {
@@ -29,13 +30,14 @@ export function captureStackTrace(): ParsedTrace[] {
 export function parseRawStackTrace(stacktrace: string): ParsedTrace[] {
   const trace: ParsedTrace[] = []
   for (const line of stacktrace.split('\n')) {
-    const parsed = LINE_RE.exec(line)?.groups as Partial<Record<keyof ParsedTrace, string>> | undefined
-    if (!parsed) {
+    const match = LINE_WITH_FUNCTION_RE.exec(line) || LINE_WITHOUT_FUNCTION_RE.exec(line)
+    if (!match?.groups?.source) {
       continue
     }
-
-    if (!parsed.source) {
-      continue
+    const parsed: Partial<Record<keyof ParsedTrace, string>> & { source: string } = {
+      function: undefined,
+      ...match.groups,
+      source: match.groups.source,
     }
 
     const parsedSource = SOURCE_RE.exec(parsed.source)?.groups
