@@ -30,7 +30,7 @@ captureStackTrace()
 console.log(captureStackTrace())
 // [{
 //   function: undefined,
-//   source: 'file:///code/unjs/errx/playground/index.js',
+//   source: 'file:///code/danielroe/errx/playground/index.js',
 //   line: '5',
 //   column: '13'
 // }]
@@ -55,7 +55,7 @@ Published under [MIT License](./LICENCE).
 [npm-version-href]: https://npmx.dev/package/errx
 [npm-downloads-src]: https://npmx.dev/api/registry/badge/downloads/errx
 [npm-downloads-href]: https://npm.chart.dev/errx
-[github-actions-src]: https://img.shields.io/github/actions/workflow/status/unjs/errx/ci.yml?branch=main&style=flat-square
-[github-actions-href]: https://github.com/unjs/errx/actions?query=workflow%3Aci
-[codecov-src]: https://img.shields.io/codecov/c/gh/unjs/errx/main?style=flat-square
-[codecov-href]: https://codecov.io/gh/unjs/errx
+[github-actions-src]: https://img.shields.io/github/actions/workflow/status/danielroe/errx/ci.yml?branch=main&style=flat-square
+[github-actions-href]: https://github.com/danielroe/errx/actions?query=workflow%3Aci
+[codecov-src]: https://img.shields.io/codecov/c/gh/danielroe/errx/main?style=flat-square
+[codecov-href]: https://codecov.io/gh/danielroe/errx

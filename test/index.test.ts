@@ -70,15 +70,15 @@ const sourcePath = fileURLToPath(new URL('../src/index.ts', import.meta.url))
 const vitestTrace = `
 Error:
     at Module.getTrace (${sourcePath}:10:9)
-    at /Users/daniel/code/unjs/errx/test/index.test.ts:6:12
-    at file:///Users/daniel/code/unjs/errx/node_modules/.pnpm/@vitest+runner@1.6.0/node_modules/@vitest/runner/dist/index.js:135:14
-    at file:///Users/daniel/code/unjs/errx/node_modules/.pnpm/@vitest+runner@1.6.0/node_modules/@vitest/runner/dist/index.js:60:26
-    at runTest (file:///Users/daniel/code/unjs/errx/node_modules/.pnpm/@vitest+runner@1.6.0/node_modules/@vitest/runner/dist/index.js:781:17)
-    at runSuite (file:///Users/daniel/code/unjs/errx/node_modules/.pnpm/@vitest+runner@1.6.0/node_modules/@vitest/runner/dist/index.js:909:15)
-    at runSuite (file:///Users/daniel/code/unjs/errx/node_modules/.pnpm/@vitest+runner@1.6.0/node_modules/@vitest/runner/dist/index.js:909:15)
-    at runFiles (file:///Users/daniel/code/unjs/errx/node_modules/.pnpm/@vitest+runner@1.6.0/node_modules/@vitest/runner/dist/index.js:958:5)
-    at startTests (file:///Users/daniel/code/unjs/errx/node_modules/.pnpm/@vitest+runner@1.6.0/node_modules/@vitest/runner/dist/index.js:967:3)
-    at file:///Users/daniel/code/unjs/errx/node_modules/.pnpm/vitest@1.6.0_@types+node@20.14.9/node_modules/vitest/dist/chunks/runtime-runBaseTests.oAvMKtQC.js:116:7`
+    at /Users/daniel/code/danielroe/errx/test/index.test.ts:6:12
+    at file:///Users/daniel/code/danielroe/errx/node_modules/.pnpm/@vitest+runner@1.6.0/node_modules/@vitest/runner/dist/index.js:135:14
+    at file:///Users/daniel/code/danielroe/errx/node_modules/.pnpm/@vitest+runner@1.6.0/node_modules/@vitest/runner/dist/index.js:60:26
+    at runTest (file:///Users/daniel/code/danielroe/errx/node_modules/.pnpm/@vitest+runner@1.6.0/node_modules/@vitest/runner/dist/index.js:781:17)
+    at runSuite (file:///Users/daniel/code/danielroe/errx/node_modules/.pnpm/@vitest+runner@1.6.0/node_modules/@vitest/runner/dist/index.js:909:15)
+    at runSuite (file:///Users/daniel/code/danielroe/errx/node_modules/.pnpm/@vitest+runner@1.6.0/node_modules/@vitest/runner/dist/index.js:909:15)
+    at runFiles (file:///Users/daniel/code/danielroe/errx/node_modules/.pnpm/@vitest+runner@1.6.0/node_modules/@vitest/runner/dist/index.js:958:5)
+    at startTests (file:///Users/daniel/code/danielroe/errx/node_modules/.pnpm/@vitest+runner@1.6.0/node_modules/@vitest/runner/dist/index.js:967:3)
+    at file:///Users/daniel/code/danielroe/errx/node_modules/.pnpm/vitest@1.6.0_@types+node@20.14.9/node_modules/vitest/dist/chunks/runtime-runBaseTests.oAvMKtQC.js:116:7`
 
 const jitiTrace = `
 Error
