@@ -21,7 +21,7 @@ importers:
         specifier: 4.1.10
         version: 4.1.10(vitest@4.1.10)
       eslint:
-        specifier: ^10.6.0
+        specifier: 10.8.0
         version: 10.8.0(supports-color@7.2.0)
       nano-staged:
         specifier: 1.0.2
