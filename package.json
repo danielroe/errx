@@ -27,14 +27,14 @@
     "test:types": "tsc --noEmit"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^9.2.0",
-    "@types/node": "^26.2.0",
+    "@antfu/eslint-config": "9.2.0",
+    "@types/node": "26.2.0",
     "@vitest/coverage-v8": "4.1.10",
     "eslint": "^10.6.0",
     "nano-staged": "1.0.2",
-    "simple-git-hooks": "^2.13.1",
+    "simple-git-hooks": "2.13.1",
     "tsdown": "0.22.14",
-    "typescript": "^6.0.3",
+    "typescript": "6.0.3",
     "vite": "^8.1.3",
     "vitest": "4.1.10"
   },
