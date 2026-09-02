@@ -107,7 +107,7 @@ Error
     at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:135:12)
     at node:internal/main/run_main_module:28:49`
 
-const bunTrace = `
+const bunLegacyTrace = `
 Error:
     at getTrace (${sourcePath}:38:8)
     at module code (${sourcePath}:19:14)
@@ -118,10 +118,57 @@ Error:
     at promiseReactionJobWithoutPromiseUnwrapAsyncContext (native)
     at promiseReactionJob (native)`
 
+// captured from node 24.19.0
+const nodeEsmTrace = `Error: trace
+    at getTrace (file:///tmp/repros/rt/gen.mjs:1:30)
+    at file:///tmp/repros/rt/gen.mjs:4:33
+    at ModuleJob.run (node:internal/modules/esm/module_job:439:25)
+    at async node:internal/modules/esm/loader:643:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)`
+
+// captured from node 24.19.0
+const nodeCjsTrace = `Error: trace
+    at getTrace (/tmp/repros/rt/gen.cjs:1:30)
+    at Object.<anonymous> (/tmp/repros/rt/gen.cjs:2:31)
+    at Module._compile (node:internal/modules/cjs/loader:1872:14)
+    at Object..js (node:internal/modules/cjs/loader:2003:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+    at node:internal/main/run_main_module:33:47`
+
+// captured from node 22.22.2, which reports async frames via processTicksAndRejections
+const node22EsmTrace = `Error: trace
+    at getTrace (file:///tmp/repros/rt/gen.mjs:1:30)
+    at file:///tmp/repros/rt/gen.mjs:4:33
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)`
+
+// captured from bun 1.3.14
+const bunTrace = `Error: m
+    at <anonymous> (/tmp/repros/rt/gen.mjs:7:49)
+    at map (native:1:11)
+    at new Promise (1:11)
+    at parse (unknown)
+    at <parse> (:0)
+    at eval (unknown)
+    at anonymous (file:///tmp/repros/rt/gen2.mjs:3:17)
+    at /tmp/repros/rt/gen.mjs:7:35`
+
 const denoTrace = `
 Error
     at captureStackTrace (file:///some/path:19:9)
     at file://${sourcePath}:59:13`
+
+// captured from deno 2.9.6
+const denoApiTrace = `NotFound: No such file or directory (os error 2): readfile 'nope'
+    at Object.readTextFileSync (ext:deno_fs/30_fs.js:1:9859)
+    at getSerialization (ext:deno_web/00_url.js:1:1270)
+    at new URL (ext:deno_web/00_url.js:2:3156)
+    at file:///tmp/repros/rt/gend.mjs:1:12`
 
 const asyncTrace = `Error: x
     at asyncFn (${import.meta.url}:1:46)
@@ -415,7 +462,22 @@ describe('parseStackTrace', () => {
   it('parses bun', () => {
     expect(parseRawStackTrace(bunTrace)).toMatchFileSnapshot('__snapshots__/bun.json5')
   })
+  it('parses older bun', () => {
+    expect(parseRawStackTrace(bunLegacyTrace)).toMatchFileSnapshot('__snapshots__/bun-legacy.json5')
+  })
+  it('parses node esm', () => {
+    expect(parseRawStackTrace(nodeEsmTrace)).toMatchFileSnapshot('__snapshots__/node-esm.json5')
+  })
+  it('parses node cjs', () => {
+    expect(parseRawStackTrace(nodeCjsTrace)).toMatchFileSnapshot('__snapshots__/node-cjs.json5')
+  })
+  it('parses node 22 esm', () => {
+    expect(parseRawStackTrace(node22EsmTrace)).toMatchFileSnapshot('__snapshots__/node-22-esm.json5')
+  })
   it('parses deno', () => {
     expect(parseRawStackTrace(denoTrace)).toMatchFileSnapshot('__snapshots__/deno.json5')
+  })
+  it('parses deno internals', () => {
+    expect(parseRawStackTrace(denoApiTrace)).toMatchFileSnapshot('__snapshots__/deno-api.json5')
   })
 })

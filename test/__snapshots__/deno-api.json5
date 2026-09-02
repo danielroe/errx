@@ -1,0 +1,31 @@
+[
+  {
+    "column": 9859,
+    "function": "Object.readTextFileSync",
+    "line": 1,
+    "raw": "    at Object.readTextFileSync (ext:deno_fs/30_fs.js:1:9859)",
+    "source": "ext:deno_fs/30_fs.js",
+  },
+  {
+    "column": 1270,
+    "function": "getSerialization",
+    "line": 1,
+    "raw": "    at getSerialization (ext:deno_web/00_url.js:1:1270)",
+    "source": "ext:deno_web/00_url.js",
+  },
+  {
+    "column": 3156,
+    "function": "URL",
+    "isConstructor": true,
+    "line": 2,
+    "raw": "    at new URL (ext:deno_web/00_url.js:2:3156)",
+    "source": "ext:deno_web/00_url.js",
+  },
+  {
+    "column": 12,
+    "function": undefined,
+    "line": 1,
+    "raw": "    at file:///tmp/repros/rt/gend.mjs:1:12",
+    "source": "file:///tmp/repros/rt/gend.mjs",
+  },
+]
