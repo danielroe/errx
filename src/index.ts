@@ -1,4 +1,6 @@
-const IS_ABSOLUTE_RE = /^[/\\](?![/\\])|^[/\\]{2}(?!\.)|^[a-z]:[/\\]/i
+const IS_ROOTED_RE = /^[/\\](?![/\\])/u
+const IS_UNC_RE = /^[/\\]{2}(?!\.)/u
+const IS_WINDOWS_DRIVE_RE = /^[a-z]:[/\\]/iu
 const SOURCE_RE = /^(?<source>.+):(?<line>\d+):(?<column>\d+)$/u
 /** Sources that carry no file information, such as JSC's `(1:11)` and `(:0)` frames. */
 const NATIVE_SOURCE_RE = /^:?\d+(?::\d+)?$/u
@@ -90,6 +92,25 @@ function parseEvalTraceLine(rest: string, flags: Omit<ParsedFrame, 'source'>): P
   }
 }
 
+/**
+ * Converts an absolute filesystem path into a `file://` URL, so that Windows paths become
+ * valid URLs (`C:\x\y.js` -> `file:///C:/x/y.js`, `\\server\share\x.js` ->
+ * `file://server/share/x.js`). Sources that already carry a scheme, and relative paths,
+ * are returned unchanged.
+ */
+function toFileURL(source: string): string {
+  if (IS_WINDOWS_DRIVE_RE.test(source)) {
+    return `file:///${source.replaceAll('\\', '/')}`
+  }
+  if (IS_UNC_RE.test(source)) {
+    return `file://${source.slice(2).replaceAll('\\', '/')}`
+  }
+  if (IS_ROOTED_RE.test(source)) {
+    return `file://${source.replaceAll('\\', '/')}`
+  }
+  return source
+}
+
 export interface ParsedTrace {
   column?: number
   function?: string
@@ -172,9 +193,7 @@ export function parseRawStackTrace(stacktrace: string): ParsedTrace[] {
       parsed.isNative = true
     }
 
-    if (IS_ABSOLUTE_RE.test(parsed.source)) {
-      parsed.source = `file://${parsed.source}`
-    }
+    parsed.source = toFileURL(parsed.source)
 
     if (parsed.source === import.meta.url) {
       continue

@@ -388,6 +388,74 @@ describe('frame metadata', () => {
   })
 })
 
+describe('absolute paths', () => {
+  const windowsTrace = String.raw`Error
+    at foo (C:\x\y.js:1:2)
+    at foo (C:/x/y.js:3:4)
+    at c:\x\y.js:5:6
+    at foo (C:\Users\My Folder\y.js:7:8)
+    at foo (\\server\share\x.js:9:10)
+    at foo (\\.\pipe\x:11:12)
+    at foo (\x\y.js:13:14)`
+
+  const otherSourcesTrace = `Error
+    at /x/y.js:1:2
+    at file:///x/y.js?v=abc:3:4
+    at node:internal/modules/cjs/loader:5:6
+    at webpack://src/x.js:7:8
+    at virtual:mod:9:10
+    at http://localhost:3000/x.js:11:12
+    at foo (relative/x.js:13:14)`
+
+  it('should convert windows paths to valid file urls', () => {
+    expect(parseRawStackTrace(windowsTrace).map(f => f.source)).toMatchInlineSnapshot(`
+      [
+        "file:///C:/x/y.js",
+        "file:///C:/x/y.js",
+        "file:///c:/x/y.js",
+        "file:///C:/Users/My Folder/y.js",
+        "file://server/share/x.js",
+        "\\\\.\\pipe\\x",
+        "file:///x/y.js",
+      ]
+    `)
+  })
+
+  it('should keep line and column despite the drive letter colon', () => {
+    expect(parseRawStackTrace(windowsTrace).map(f => [f.line, f.column])).toEqual([
+      [1, 2],
+      [3, 4],
+      [5, 6],
+      [7, 8],
+      [9, 10],
+      [11, 12],
+      [13, 14],
+    ])
+  })
+
+  it('should produce parseable urls', () => {
+    for (const { source } of parseRawStackTrace(windowsTrace)) {
+      if (source.startsWith('file://')) {
+        expect(() => new URL(source)).not.toThrow()
+      }
+    }
+  })
+
+  it('should leave posix paths, schemes and relative paths alone', () => {
+    expect(parseRawStackTrace(otherSourcesTrace).map(f => f.source)).toMatchInlineSnapshot(`
+      [
+        "file:///x/y.js",
+        "file:///x/y.js?v=abc",
+        "node:internal/modules/cjs/loader",
+        "webpack://src/x.js",
+        "virtual:mod",
+        "http://localhost:3000/x.js",
+        "relative/x.js",
+      ]
+    `)
+  })
+})
+
 describe('parseError', () => {
   it('should parse the stack of an existing error', () => {
     const trace = parseError(new Error('boom'))
