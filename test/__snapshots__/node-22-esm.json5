@@ -1,0 +1,46 @@
+[
+  {
+    "column": 30,
+    "function": "getTrace",
+    "line": 1,
+    "raw": "    at getTrace (file:///tmp/repros/rt/gen.mjs:1:30)",
+    "source": "file:///tmp/repros/rt/gen.mjs",
+  },
+  {
+    "column": 33,
+    "function": undefined,
+    "line": 4,
+    "raw": "    at file:///tmp/repros/rt/gen.mjs:4:33",
+    "source": "file:///tmp/repros/rt/gen.mjs",
+  },
+  {
+    "column": 25,
+    "function": "ModuleJob.run",
+    "line": 343,
+    "raw": "    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)",
+    "source": "node:internal/modules/esm/module_job",
+  },
+  {
+    "column": 5,
+    "function": "process.processTicksAndRejections",
+    "line": 103,
+    "raw": "    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)",
+    "source": "node:internal/process/task_queues",
+  },
+  {
+    "column": 26,
+    "function": "onImport.tracePromise.__proto__",
+    "isAsync": true,
+    "line": 665,
+    "raw": "    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)",
+    "source": "node:internal/modules/esm/loader",
+  },
+  {
+    "column": 5,
+    "function": "asyncRunEntryPointWithESMLoader",
+    "isAsync": true,
+    "line": 117,
+    "raw": "    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)",
+    "source": "node:internal/modules/run_main",
+  },
+]

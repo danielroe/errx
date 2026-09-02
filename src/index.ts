@@ -1,5 +1,8 @@
 const IS_ABSOLUTE_RE = /^[/\\](?![/\\])|^[/\\]{2}(?!\.)|^[a-z]:[/\\]/i
 const SOURCE_RE = /^(?<source>.+):(?<line>\d+):(?<column>\d+)$/u
+/** Sources that carry no file information, such as JSC's `(1:11)` and `(:0)` frames. */
+const NATIVE_SOURCE_RE = /^:?\d+(?::\d+)?$/u
+const NATIVE_SOURCES = new Set(['<anonymous>', 'native', 'unknown'])
 
 /**
  * Returns the index at which a frame's contents begin (just after `at `), or `-1` if the
@@ -98,7 +101,7 @@ export interface ParsedTrace {
   isConstructor?: boolean
   /** Set when the frame is inside evaluated code (`at eval (eval at fn (...), <anonymous>:1:1)`). */
   isEval?: boolean
-  /** Set when the frame has no resolvable source, i.e. `<anonymous>` or `native`. */
+  /** Set when the frame has no resolvable source, such as `<anonymous>`, `native` or `unknown`. */
   isNative?: boolean
   /** The original stack trace line, useful for rendering frames whose shape cannot be parsed. */
   raw?: string
@@ -164,7 +167,8 @@ export function parseRawStackTrace(stacktrace: string): ParsedTrace[] {
       parsed.line = Number(parsedSource.line)
       parsed.column = Number(parsedSource.column)
     }
-    else if (parsed.source === '<anonymous>' || parsed.source === 'native') {
+
+    if (NATIVE_SOURCES.has(parsed.source) || NATIVE_SOURCE_RE.test(parsed.source)) {
       parsed.isNative = true
     }
 
