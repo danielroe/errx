@@ -3,6 +3,7 @@
     "column": 9,
     "function": "captureStackTrace",
     "line": 19,
+    "raw": "    at captureStackTrace (file:///some/path:19:9)",
     "source": "file:///some/path",
   },
 ]

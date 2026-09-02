@@ -2,31 +2,37 @@
   {
     "function": "moduleEvaluation",
     "isNative": true,
+    "raw": "    at moduleEvaluation (native)",
     "source": "native",
   },
   {
     "function": "moduleEvaluation",
     "isNative": true,
+    "raw": "    at moduleEvaluation (native)",
     "source": "native",
   },
   {
     "function": "<anonymous>",
     "isNative": true,
+    "raw": "    at <anonymous> (native)",
     "source": "native",
   },
   {
     "function": "asyncFunctionResume",
     "isNative": true,
+    "raw": "    at asyncFunctionResume (native)",
     "source": "native",
   },
   {
     "function": "promiseReactionJobWithoutPromiseUnwrapAsyncContext",
     "isNative": true,
+    "raw": "    at promiseReactionJobWithoutPromiseUnwrapAsyncContext (native)",
     "source": "native",
   },
   {
     "function": "promiseReactionJob",
     "isNative": true,
+    "raw": "    at promiseReactionJob (native)",
     "source": "native",
   },
 ]
