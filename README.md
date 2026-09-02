@@ -20,12 +20,16 @@ pnpm install errx
 ```
 
 ```js
-import { captureRawStackTrace, captureStackTrace, parseRawStackTrace } from 'errx'
+import { captureRawStackTrace, captureStackTrace, parseError, parseRawStackTrace } from 'errx'
 
 // returns raw string stack trace
 captureRawStackTrace()
 // returns parsed stack trace
 captureStackTrace()
+// parses the stack of an existing error (empty array if it has none)
+parseError(error)
+// parses a stack trace string
+parseRawStackTrace(error.stack)
 
 console.log(captureStackTrace())
 // [{
@@ -48,12 +52,13 @@ interface ParsedTrace {
   isConstructor?: boolean
   isEval?: boolean
   isNative?: boolean
+  raw?: string
 }
 ```
 
 `function` holds the bare function name; V8's `async` and `new` prefixes are surfaced as `isAsync` and `isConstructor` instead. Frames with no resolvable location (`at Array.map (<anonymous>)`, `at moduleEvaluation (native)`) are kept, with `isNative` set and no `line`/`column`. For `eval` frames (`at eval (eval at fn (file.js:1:2), <anonymous>:3:4)`), `isEval` is set and `source`/`line`/`column` point at the innermost real file location rather than the position inside the evaluated code.
 
-The `is*` flags are only present when `true`.
+The `is*` flags are only present when `true`. `raw` holds the original stack trace line. Lines that are recognisably frames but whose shape cannot be parsed are still returned, with an empty `source`, so they can be rendered from `raw`.
 
 ## 💻 Development
 

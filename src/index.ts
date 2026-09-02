@@ -2,20 +2,32 @@ const IS_ABSOLUTE_RE = /^[/\\](?![/\\])|^[/\\]{2}(?!\.)|^[a-z]:[/\\]/i
 const SOURCE_RE = /^(?<source>.+):(?<line>\d+):(?<column>\d+)$/u
 
 /**
- * Extracts the function/source parts of a `    at fn (source)` (or `    at source`) stack
- * frame using string scanning rather than a regular expression, since the equivalent pattern
- * requires backtracking and is vulnerable to polynomial-time matching on hostile input.
+ * Returns the index at which a frame's contents begin (just after `at `), or `-1` if the
+ * line is not an indented `at ` frame, such as the leading `Error: message` header.
  */
-function parseTraceLine(line: string): ParsedFrame | undefined {
+function getFrameStart(line: string): number {
   let start = 0
   while (start < line.length && (line[start] === ' ' || line[start] === '\t')) {
     start++
   }
   if (start === 0 || !line.startsWith('at ', start)) {
+    return -1
+  }
+  return start + 3
+}
+
+/**
+ * Extracts the function/source parts of a `    at fn (source)` (or `    at source`) stack
+ * frame using string scanning rather than a regular expression, since the equivalent pattern
+ * requires backtracking and is vulnerable to polynomial-time matching on hostile input.
+ */
+function parseTraceLine(line: string): ParsedFrame | undefined {
+  const start = getFrameStart(line)
+  if (start < 0) {
     return
   }
 
-  let rest = line.slice(start + 3)
+  let rest = line.slice(start)
   const flags: Omit<ParsedFrame, 'source'> = {}
 
   if (rest.startsWith('async ')) {
@@ -88,6 +100,8 @@ export interface ParsedTrace {
   isEval?: boolean
   /** Set when the frame has no resolvable source, i.e. `<anonymous>` or `native`. */
   isNative?: boolean
+  /** The original stack trace line, useful for rendering frames whose shape cannot be parsed. */
+  raw?: string
 }
 
 type ParsedFrame = Partial<ParsedTrace> & { source: string }
@@ -109,16 +123,39 @@ export function captureStackTrace(): ParsedTrace[] {
   return stack ? parseRawStackTrace(stack) : []
 }
 
+/**
+ * Parses the stack trace of an existing error, returning an empty array for errors
+ * without a (string) stack.
+ */
+export function parseError(error: unknown): ParsedTrace[] {
+  const stack = (error as { stack?: unknown } | undefined | null)?.stack
+
+  return typeof stack === 'string' ? parseRawStackTrace(stack) : []
+}
+
+/**
+ * Parses a stack trace produced by V8 (Node, Deno, Chromium) into structured frames.
+ *
+ * Lines that are recognisably frames but cannot be parsed further are returned with an
+ * empty `source`, so that a consumer can still render their `raw` text.
+ */
 export function parseRawStackTrace(stacktrace: string): ParsedTrace[] {
   const trace: ParsedTrace[] = []
-  for (const line of stacktrace.split('\n')) {
+  for (const rawLine of stacktrace.split('\n')) {
+    const line = rawLine.trimEnd()
+    if (getFrameStart(line) < 0) {
+      continue
+    }
+
     const match = parseTraceLine(line)
     if (!match?.source) {
+      trace.push({ source: '', raw: line })
       continue
     }
     const parsed: ParsedFrame = {
       function: undefined,
       ...match,
+      raw: line,
     }
 
     const parsedSource = SOURCE_RE.exec(parsed.source)?.groups
