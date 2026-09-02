@@ -38,7 +38,9 @@ describe('errx', () => {
         },
         {
           "column": undefined,
-          "function": "new Promise",
+          "function": "Promise",
+          "isConstructor": true,
+          "isNative": true,
           "line": undefined,
           "source": "<anonymous>",
         },
@@ -56,7 +58,9 @@ describe('errx', () => {
         },
         {
           "column": undefined,
-          "function": "new Promise",
+          "function": "Promise",
+          "isConstructor": true,
+          "isNative": true,
           "line": undefined,
           "source": "<anonymous>",
         },
@@ -109,6 +113,203 @@ const denoTrace = `
 Error
     at captureStackTrace (file:///some/path:19:9)
     at file://${sourcePath}:59:13`
+
+const asyncTrace = `Error: x
+    at asyncFn (${import.meta.url}:1:46)
+    at async outer (${import.meta.url}:2:26)
+    at async node:internal/modules/esm/loader:643:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)`
+
+const constructorTrace = `Error: ctor
+    at new Foo (${import.meta.url}:5:35)
+    at ${import.meta.url}:6:7`
+
+const nativeTrace = `Error: m
+    at ${import.meta.url}:8:29
+    at Array.map (<anonymous>)
+    at JSON.parse (<anonymous>)
+    at new Promise (<anonymous>)
+    at <anonymous>`
+
+const evalTrace = `Error: ev
+    at eval (eval at evalHost (${import.meta.url}:10:30), <anonymous>:1:20)
+    at eval (eval at inner (eval at outer (${import.meta.url}:11:3), <anonymous>:2:9), <anonymous>:1:1)
+    at evalHost (${import.meta.url}:10:30)`
+
+const schemeTrace = `Error
+    at f (file:///x/y.js?v=abc:1:2)
+    at g (webpack://src/x.js:1:2)
+    at h (virtual:mod:1:2)
+    at Object.<anonymous> (/x/y.js:16:1)
+    at Module._compile (node:internal/modules/cjs/loader:1376:14)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:135:12)
+    at internal/main/run_main_module:28:49`
+
+describe('frame metadata', () => {
+  it('should unwrap async frames', () => {
+    expect(parseRawStackTrace(asyncTrace)).toMatchInlineSnapshot(`
+      [
+        {
+          "column": 46,
+          "function": "asyncFn",
+          "line": 1,
+          "source": "${import.meta.url}",
+        },
+        {
+          "column": 26,
+          "function": "outer",
+          "isAsync": true,
+          "line": 2,
+          "source": "${import.meta.url}",
+        },
+        {
+          "column": 26,
+          "function": undefined,
+          "isAsync": true,
+          "line": 643,
+          "source": "node:internal/modules/esm/loader",
+        },
+        {
+          "column": 5,
+          "function": "asyncRunEntryPointWithESMLoader",
+          "isAsync": true,
+          "line": 101,
+          "source": "node:internal/modules/run_main",
+        },
+      ]
+    `)
+  })
+
+  it('should unwrap constructor frames', () => {
+    expect(parseRawStackTrace(constructorTrace)).toMatchInlineSnapshot(`
+      [
+        {
+          "column": 35,
+          "function": "Foo",
+          "isConstructor": true,
+          "line": 5,
+          "source": "${import.meta.url}",
+        },
+        {
+          "column": 7,
+          "function": undefined,
+          "line": 6,
+          "source": "${import.meta.url}",
+        },
+      ]
+    `)
+  })
+
+  it('should preserve frames without a resolvable source', () => {
+    expect(parseRawStackTrace(nativeTrace)).toMatchInlineSnapshot(`
+      [
+        {
+          "column": 29,
+          "function": undefined,
+          "line": 8,
+          "source": "${import.meta.url}",
+        },
+        {
+          "function": "Array.map",
+          "isNative": true,
+          "source": "<anonymous>",
+        },
+        {
+          "function": "JSON.parse",
+          "isNative": true,
+          "source": "<anonymous>",
+        },
+        {
+          "function": "Promise",
+          "isConstructor": true,
+          "isNative": true,
+          "source": "<anonymous>",
+        },
+        {
+          "function": undefined,
+          "isNative": true,
+          "source": "<anonymous>",
+        },
+      ]
+    `)
+  })
+
+  it('should preserve eval frames, using the innermost real source', () => {
+    expect(parseRawStackTrace(evalTrace)).toMatchInlineSnapshot(`
+      [
+        {
+          "column": 30,
+          "function": "eval",
+          "isEval": true,
+          "line": 10,
+          "source": "${import.meta.url}",
+        },
+        {
+          "column": 3,
+          "function": "eval",
+          "isEval": true,
+          "line": 11,
+          "source": "${import.meta.url}",
+        },
+        {
+          "column": 30,
+          "function": "evalHost",
+          "line": 10,
+          "source": "${import.meta.url}",
+        },
+      ]
+    `)
+  })
+
+  it('should round-trip sources with query strings and non-file schemes', () => {
+    expect(parseRawStackTrace(schemeTrace)).toMatchInlineSnapshot(`
+      [
+        {
+          "column": 2,
+          "function": "f",
+          "line": 1,
+          "source": "file:///x/y.js?v=abc",
+        },
+        {
+          "column": 2,
+          "function": "g",
+          "line": 1,
+          "source": "webpack://src/x.js",
+        },
+        {
+          "column": 2,
+          "function": "h",
+          "line": 1,
+          "source": "virtual:mod",
+        },
+        {
+          "column": 1,
+          "function": "Object.<anonymous>",
+          "line": 16,
+          "source": "file:///x/y.js",
+        },
+        {
+          "column": 14,
+          "function": "Module._compile",
+          "line": 1376,
+          "source": "node:internal/modules/cjs/loader",
+        },
+        {
+          "column": 12,
+          "function": "Function.executeUserEntryPoint [as runMain]",
+          "line": 135,
+          "source": "node:internal/modules/run_main",
+        },
+        {
+          "column": 49,
+          "function": undefined,
+          "line": 28,
+          "source": "internal/main/run_main_module",
+        },
+      ]
+    `)
+  })
+})
 
 describe('parseStackTrace', () => {
   it('parses vitest', () => {

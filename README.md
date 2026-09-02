@@ -31,10 +31,29 @@ console.log(captureStackTrace())
 // [{
 //   function: undefined,
 //   source: 'file:///code/danielroe/errx/playground/index.js',
-//   line: '5',
-//   column: '13'
+//   line: 5,
+//   column: 13
 // }]
 ```
+
+### `ParsedTrace`
+
+```ts
+interface ParsedTrace {
+  column?: number
+  function?: string
+  line?: number
+  source: string
+  isAsync?: boolean
+  isConstructor?: boolean
+  isEval?: boolean
+  isNative?: boolean
+}
+```
+
+`function` holds the bare function name; V8's `async` and `new` prefixes are surfaced as `isAsync` and `isConstructor` instead. Frames with no resolvable location (`at Array.map (<anonymous>)`, `at moduleEvaluation (native)`) are kept, with `isNative` set and no `line`/`column`. For `eval` frames (`at eval (eval at fn (file.js:1:2), <anonymous>:3:4)`), `isEval` is set and `source`/`line`/`column` point at the innermost real file location rather than the position inside the evaluated code.
+
+The `is*` flags are only present when `true`.
 
 ## 💻 Development
 
