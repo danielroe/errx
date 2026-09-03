@@ -1,10 +1,7 @@
-const IS_ROOTED_RE = /^[/\\](?![/\\])/u
-const IS_UNC_RE = /^[/\\]{2}(?!\.)/u
-const IS_WINDOWS_DRIVE_RE = /^[a-z]:[/\\]/iu
-const SOURCE_RE = /^(?<source>.+):(?<line>\d+):(?<column>\d+)$/u
-/** Sources that carry no file information, such as JSC's `(1:11)` and `(:0)` frames. */
-const NATIVE_SOURCE_RE = /^:?\d+(?::\d+)?$/u
-const NATIVE_SOURCES = new Set(['<anonymous>', 'native', 'unknown'])
+const WINDOWS_DRIVE_RE = /^[a-z]:[/\\]/iu
+const SOURCE_RE = /^(.+):(\d+):(\d+)$/u
+/** Sources with no file information, including JSC's `native`, `(1:11)` and `(:0)` frames. */
+const NATIVE_SOURCE_RE = /^(?:<anonymous>|native|unknown|:?\d+(?::\d+)?)$/u
 
 /**
  * Returns the index at which a frame's contents begin (just after `at `), or `-1` if the
@@ -12,103 +9,103 @@ const NATIVE_SOURCES = new Set(['<anonymous>', 'native', 'unknown'])
  */
 function getFrameStart(line: string): number {
   let start = 0
-  while (start < line.length && (line[start] === ' ' || line[start] === '\t')) {
+  while (line[start] === ' ' || line[start] === '\t') {
     start++
   }
-  if (start === 0 || !line.startsWith('at ', start)) {
-    return -1
-  }
-  return start + 3
+  return start > 0 && line.startsWith('at ', start) ? start + 3 : -1
 }
 
 /**
- * Extracts the function/source parts of a `    at fn (source)` (or `    at source`) stack
- * frame using string scanning rather than a regular expression, since the equivalent pattern
- * requires backtracking and is vulnerable to polynomial-time matching on hostile input.
+ * Parses the contents of a `fn (source)` (or `source`) frame, using string scanning rather
+ * than a regular expression, since the equivalent pattern requires backtracking and is
+ * vulnerable to polynomial-time matching on hostile input.
  */
-function parseTraceLine(line: string): ParsedFrame | undefined {
-  const start = getFrameStart(line)
-  if (start < 0) {
-    return
-  }
-
-  let rest = line.slice(start)
-  const flags: Omit<ParsedFrame, 'source'> = {}
+function parseFrame(rest: string): ParsedTrace | undefined {
+  const frame: ParsedTrace = { function: undefined, source: '' }
 
   if (rest.startsWith('async ')) {
-    flags.isAsync = true
+    frame.isAsync = true
     rest = rest.slice(6)
   }
   if (rest.startsWith('new ')) {
-    flags.isConstructor = true
+    frame.isConstructor = true
     rest = rest.slice(4)
   }
 
   if (rest.endsWith(')')) {
     const open = rest.lastIndexOf(' (')
-    if (open > 0) {
-      const source = rest.slice(open + 2, -1)
-      if (source.length > 0 && !source.includes(')')) {
-        return { ...flags, function: rest.slice(0, open), source }
-      }
+    const source = open > 0 ? rest.slice(open + 2, -1) : ''
+    if (source && !source.includes(')')) {
+      frame.function = rest.slice(0, open)
+      frame.source = source
     }
-    return parseEvalTraceLine(rest, flags)
+    else if (!parseEvalFrame(rest, frame)) {
+      return
+    }
   }
-
-  if (rest.length === 0 || /\s/u.test(rest)) {
+  else if (!rest || /\s/u.test(rest)) {
     return
   }
-  return { ...flags, source: rest }
+  else {
+    frame.source = rest
+  }
+
+  const match = SOURCE_RE.exec(frame.source)
+  if (match) {
+    frame.source = match[1]!
+    frame.line = Number(match[2])
+    frame.column = Number(match[3])
+  }
+
+  if (NATIVE_SOURCE_RE.test(frame.source)) {
+    frame.isNative = true
+  }
+
+  frame.source = toFileURL(frame.source)
+
+  return frame
 }
 
 /**
- * Extracts the innermost real source location from an `eval` frame, such as
- * `eval (eval at fn (file:1:2), <anonymous>:3:4)`, discarding the position within the
- * evaluated code since it cannot be resolved to a file.
+ * Resolves an `eval` frame, such as `eval (eval at fn (file:1:2), <anonymous>:3:4)`, to the
+ * innermost real source location, discarding the position within the evaluated code since
+ * it cannot be resolved to a file.
  */
-function parseEvalTraceLine(rest: string, flags: Omit<ParsedFrame, 'source'>): ParsedFrame | undefined {
+function parseEvalFrame(rest: string, frame: ParsedTrace): boolean {
   const evalAt = rest.lastIndexOf('eval at ')
-  if (evalAt < 0) {
-    return
-  }
-
-  const open = rest.indexOf('(', evalAt)
+  const open = evalAt < 0 ? -1 : rest.indexOf('(', evalAt)
   const close = open < 0 ? -1 : rest.indexOf(')', open)
-  if (close < 0) {
-    return
-  }
-
-  const source = rest.slice(open + 1, close)
-  if (source.length === 0) {
-    return
+  const source = close < 0 ? '' : rest.slice(open + 1, close)
+  if (!source) {
+    return false
   }
 
   const origin = rest.indexOf(' (eval at ')
-  return {
-    ...flags,
-    isEval: true,
-    function: origin > 0 ? rest.slice(0, origin) : undefined,
-    source,
-  }
+  frame.isEval = true
+  frame.function = origin > 0 ? rest.slice(0, origin) : undefined
+  frame.source = source
+  return true
 }
 
 /**
  * Converts an absolute filesystem path into a `file://` URL, so that Windows paths become
  * valid URLs (`C:\x\y.js` -> `file:///C:/x/y.js`, `\\server\share\x.js` ->
- * `file://server/share/x.js`). Sources that already carry a scheme, and relative paths,
- * are returned unchanged.
+ * `file://server/share/x.js`). Sources that already carry a scheme, device paths
+ * (`\\.\pipe\x`) and relative paths are returned unchanged.
  */
 function toFileURL(source: string): string {
-  if (IS_WINDOWS_DRIVE_RE.test(source)) {
+  if (WINDOWS_DRIVE_RE.test(source)) {
     return `file:///${source.replaceAll('\\', '/')}`
   }
-  if (IS_UNC_RE.test(source)) {
-    return `file://${source.slice(2).replaceAll('\\', '/')}`
+
+  const [first, second, third] = source
+  if (first !== '/' && first !== '\\') {
+    return source
   }
-  if (IS_ROOTED_RE.test(source)) {
+  if (second !== '/' && second !== '\\') {
     return `file://${source.replaceAll('\\', '/')}`
   }
-  return source
+  return third === '.' ? source : `file://${source.slice(2).replaceAll('\\', '/')}`
 }
 
 export interface ParsedTrace {
@@ -127,8 +124,6 @@ export interface ParsedTrace {
   /** The original stack trace line, useful for rendering frames whose shape cannot be parsed. */
   raw?: string
 }
-
-type ParsedFrame = Partial<ParsedTrace> & { source: string }
 
 export function captureRawStackTrace(): string | undefined {
   if (!Error.captureStackTrace) {
@@ -152,13 +147,14 @@ export function captureStackTrace(): ParsedTrace[] {
  * without a (string) stack.
  */
 export function parseError(error: unknown): ParsedTrace[] {
-  const stack = (error as { stack?: unknown } | undefined | null)?.stack
+  const stack = (error as Error | null | undefined)?.stack
 
   return typeof stack === 'string' ? parseRawStackTrace(stack) : []
 }
 
 /**
- * Parses a stack trace produced by V8 (Node, Deno, Chromium) into structured frames.
+ * Parses a stack trace produced by V8 (Node, Deno, Chromium) or JSC (Bun) into structured
+ * frames.
  *
  * Lines that are recognisably frames but cannot be parsed further are returned with an
  * empty `source`, so that a consumer can still render their `raw` text.
@@ -167,39 +163,22 @@ export function parseRawStackTrace(stacktrace: string): ParsedTrace[] {
   const trace: ParsedTrace[] = []
   for (const rawLine of stacktrace.split('\n')) {
     const line = rawLine.trimEnd()
-    if (getFrameStart(line) < 0) {
+    const start = getFrameStart(line)
+    if (start < 0) {
       continue
     }
 
-    const match = parseTraceLine(line)
-    if (!match?.source) {
+    const frame = parseFrame(line.slice(start))
+    if (!frame) {
       trace.push({ source: '', raw: line })
       continue
     }
-    const parsed: ParsedFrame = {
-      function: undefined,
-      ...match,
-      raw: line,
-    }
-
-    const parsedSource = SOURCE_RE.exec(parsed.source)?.groups
-    if (parsedSource) {
-      parsed.source = parsedSource.source!
-      parsed.line = Number(parsedSource.line)
-      parsed.column = Number(parsedSource.column)
-    }
-
-    if (NATIVE_SOURCES.has(parsed.source) || NATIVE_SOURCE_RE.test(parsed.source)) {
-      parsed.isNative = true
-    }
-
-    parsed.source = toFileURL(parsed.source)
-
-    if (parsed.source === import.meta.url) {
+    if (frame.source === import.meta.url) {
       continue
     }
 
-    trace.push(parsed as ParsedTrace)
+    frame.raw = line
+    trace.push(frame)
   }
 
   return trace
