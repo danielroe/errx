@@ -10,4 +10,4 @@ allowBuilds:
   simple-git-hooks: true
 
 overrides:
-  errx: 'link:.'
+  errx: 'workspace:*'
