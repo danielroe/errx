@@ -1,13 +1,15 @@
-shellEmulator: true
+minimumReleaseAgeExcludePrune: true
 
 trustPolicy: no-downgrade
+
+shellEmulator: true
 
 packages:
   - playground
 
+overrides:
+  errx: 'workspace:*'
+
 allowBuilds:
   esbuild: false
   simple-git-hooks: true
-
-overrides:
-  errx: 'workspace:*'
