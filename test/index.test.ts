@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { captureStackTrace, parseError, parseRawStackTrace } from '../src'
+import { captureRawStackTrace, captureStackTrace, parseError, parseRawStackTrace } from '../src'
 
 describe('errx', () => {
   it('works', () => {
@@ -72,6 +72,13 @@ describe('errx', () => {
           "line": undefined,
           "raw": "<string>",
           "source": "<anonymous>",
+        },
+        {
+          "column": "<number>",
+          "function": "runWithTimeout",
+          "line": "<number>",
+          "raw": "<string>",
+          "source": "vitest/dist/chunks/run.js",
         },
       ]
     `)
@@ -385,6 +392,30 @@ describe('frame metadata', () => {
         },
       ]
     `)
+  })
+
+  it('should take the last parenthesis when a function name contains one', () => {
+    expect(parseRawStackTrace(`Error\n    at Object.method (as x) (/y.js:3:4)`)).toMatchInlineSnapshot(`
+      [
+        {
+          "column": 4,
+          "function": "Object.method (as x)",
+          "line": 3,
+          "raw": "    at Object.method (as x) (/y.js:3:4)",
+          "source": "file:///y.js",
+        },
+      ]
+    `)
+  })
+})
+
+describe('captureRawStackTrace', () => {
+  it('should return a stack starting at the caller', () => {
+    const stack = captureRawStackTrace()!
+
+    expect(typeof stack).toBe('string')
+    expect(stack).not.toContain('src/index.ts')
+    expect(parseRawStackTrace(stack)[0]!.source).toBe(import.meta.url)
   })
 })
 
