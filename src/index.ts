@@ -1,18 +1,10 @@
+const SELF_URL = import.meta.url
 const WINDOWS_DRIVE_RE = /^[a-z]:[/\\]/iu
-const SOURCE_RE = /^(.+):(\d+):(\d+)$/u
 /** Sources with no file information, including JSC's `native`, `(1:11)` and `(:0)` frames. */
 const NATIVE_SOURCE_RE = /^(?:<anonymous>|native|unknown|:?\d+(?::\d+)?)$/u
 
-/**
- * Returns the index at which a frame's contents begin (just after `at `), or `-1` if the
- * line is not an indented `at ` frame, such as the leading `Error: message` header.
- */
-function getFrameStart(line: string): number {
-  let start = 0
-  while (line[start] === ' ' || line[start] === '\t') {
-    start++
-  }
-  return start > 0 && line.startsWith('at ', start) ? start + 3 : -1
+function isDigit(code: number): boolean {
+  return code > 47 && code < 58
 }
 
 /**
@@ -32,36 +24,50 @@ function parseFrame(rest: string): ParsedTrace | undefined {
     rest = rest.slice(4)
   }
 
+  let src: string
   if (rest.endsWith(')')) {
     const open = rest.lastIndexOf(' (')
-    const source = open > 0 ? rest.slice(open + 2, -1) : ''
-    if (source && !source.includes(')')) {
+    const inner = open > 0 ? rest.slice(open + 2, -1) : ''
+    if (inner && !inner.includes(')')) {
       frame.function = rest.slice(0, open)
-      frame.source = source
+      src = inner
     }
-    else if (!parseEvalFrame(rest, frame)) {
-      return
+    else {
+      src = parseEvalFrame(rest, frame)
+      if (!src) {
+        return
+      }
     }
   }
   else if (!rest || /\s/u.test(rest)) {
     return
   }
   else {
-    frame.source = rest
+    src = rest
   }
 
-  const match = SOURCE_RE.exec(frame.source)
-  if (match) {
-    frame.source = match[1]!
-    frame.line = Number(match[2])
-    frame.column = Number(match[3])
+  // trailing `:line:column`
+  let column = src.length
+  while (isDigit(src.charCodeAt(column - 1))) {
+    column--
+  }
+  if (column < src.length && src.charCodeAt(column - 1) === 58) {
+    let line = column - 1
+    while (isDigit(src.charCodeAt(line - 1))) {
+      line--
+    }
+    if (line < column - 1 && line > 1 && src.charCodeAt(line - 1) === 58) {
+      frame.line = +src.slice(line, column - 1)
+      frame.column = +src.slice(column)
+      src = src.slice(0, line - 1)
+    }
   }
 
-  if (NATIVE_SOURCE_RE.test(frame.source)) {
+  if (NATIVE_SOURCE_RE.test(src)) {
     frame.isNative = true
   }
 
-  frame.source = toFileURL(frame.source)
+  frame.source = toFileURL(src)
 
   return frame
 }
@@ -69,22 +75,21 @@ function parseFrame(rest: string): ParsedTrace | undefined {
 /**
  * Resolves an `eval` frame, such as `eval (eval at fn (file:1:2), <anonymous>:3:4)`, to the
  * innermost real source location, discarding the position within the evaluated code since
- * it cannot be resolved to a file.
+ * it cannot be resolved to a file. Returns an empty string for other frames.
  */
-function parseEvalFrame(rest: string, frame: ParsedTrace): boolean {
+function parseEvalFrame(rest: string, frame: ParsedTrace): string {
   const evalAt = rest.lastIndexOf('eval at ')
   const open = evalAt < 0 ? -1 : rest.indexOf('(', evalAt)
   const close = open < 0 ? -1 : rest.indexOf(')', open)
   const source = close < 0 ? '' : rest.slice(open + 1, close)
-  if (!source) {
-    return false
+  if (source) {
+    const origin = rest.indexOf(' (eval at ')
+    frame.isEval = true
+    if (origin > 0) {
+      frame.function = rest.slice(0, origin)
+    }
   }
-
-  const origin = rest.indexOf(' (eval at ')
-  frame.isEval = true
-  frame.function = origin > 0 ? rest.slice(0, origin) : undefined
-  frame.source = source
-  return true
+  return source
 }
 
 /**
@@ -94,18 +99,22 @@ function parseEvalFrame(rest: string, frame: ParsedTrace): boolean {
  * (`\\.\pipe\x`) and relative paths are returned unchanged.
  */
 function toFileURL(source: string): string {
-  if (WINDOWS_DRIVE_RE.test(source)) {
-    return `file:///${source.replaceAll('\\', '/')}`
+  const first = source.charCodeAt(0)
+  let prefix = 'file:///'
+  if (first === 47 || first === 92) {
+    prefix = 'file://'
+    const second = source.charCodeAt(1)
+    if (second === 47 || second === 92) {
+      if (source.charCodeAt(2) === 46) {
+        return source
+      }
+      source = source.slice(2)
+    }
   }
-
-  const [first, second, third] = source
-  if (first !== '/' && first !== '\\') {
+  else if (!WINDOWS_DRIVE_RE.test(source)) {
     return source
   }
-  if (second !== '/' && second !== '\\') {
-    return `file://${source.replaceAll('\\', '/')}`
-  }
-  return third === '.' ? source : `file://${source.slice(2).replaceAll('\\', '/')}`
+  return prefix + source.replaceAll('\\', '/')
 }
 
 export interface ParsedTrace {
@@ -126,20 +135,13 @@ export interface ParsedTrace {
 }
 
 export function captureRawStackTrace(): string | undefined {
-  if (!Error.captureStackTrace) {
-    return
-  }
-
-  // eslint-disable-next-line unicorn/error-message
-  const stack = new Error()
-  Error.captureStackTrace(stack)
-  return stack.stack
+  const holder: { stack?: string } = {}
+  Error.captureStackTrace?.(holder, captureRawStackTrace)
+  return holder.stack
 }
 
 export function captureStackTrace(): ParsedTrace[] {
-  const stack = captureRawStackTrace()
-
-  return stack ? parseRawStackTrace(stack) : []
+  return parseRawStackTrace(captureRawStackTrace() ?? '')
 }
 
 /**
@@ -162,18 +164,15 @@ export function parseError(error: unknown): ParsedTrace[] {
 export function parseRawStackTrace(stacktrace: string): ParsedTrace[] {
   const trace: ParsedTrace[] = []
   for (const rawLine of stacktrace.split('\n')) {
+    // frames are indented, unlike the `Error: message` header
     const line = rawLine.trimEnd()
-    const start = getFrameStart(line)
-    if (start < 0) {
+    const rest = line.trimStart()
+    if (rest.length === line.length || !rest.startsWith('at ')) {
       continue
     }
 
-    const frame = parseFrame(line.slice(start))
-    if (!frame) {
-      trace.push({ source: '', raw: line })
-      continue
-    }
-    if (frame.source === import.meta.url) {
+    const frame = parseFrame(rest.slice(3)) ?? { source: '' }
+    if (frame.source === SELF_URL) {
       continue
     }
 
