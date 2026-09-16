@@ -6,6 +6,11 @@ function isSlash(code: number): boolean {
   return code === 47 || code === 92
 }
 
+function indexOrEnd(text: string, search: string, from: number): number {
+  const index = text.indexOf(search, from)
+  return index < 0 ? text.length : index
+}
+
 function isDigit(code: number): boolean {
   return code > 47 && code < 58
 }
@@ -23,7 +28,16 @@ function isSpace(code: number): boolean {
  * than a regular expression, since the equivalent pattern requires backtracking and is
  * vulnerable to polynomial-time matching on hostile input.
  */
-function parseFrame(text: string, from: number, to: number): ParsedTrace | undefined {
+/**
+ * Positions of the next ` (` and space found in the stack trace, so that searches that run
+ * past the current frame are not repeated for every following frame.
+ */
+interface Cursor {
+  paren: number
+  space: number
+}
+
+function parseFrame(text: string, from: number, to: number, cursor: Cursor): ParsedTrace | undefined {
   const frame: ParsedTrace = { function: undefined, source: '' }
 
   if (text.startsWith('async ', from)) {
@@ -41,10 +55,17 @@ function parseFrame(text: string, from: number, to: number): ParsedTrace | undef
     end--
     // forward search, since function names are short and sources long; when the candidate
     // source contains a space the last ` (` is found by scanning backwards instead
-    let open = text.indexOf(' (', from)
-    const space = text.indexOf(' ', open + 2)
-    if (space >= 0 && space < end) {
-      open = text.lastIndexOf(' (', end - 1)
+    if (cursor.paren < from) {
+      cursor.paren = indexOrEnd(text, ' (', from)
+    }
+    let open = cursor.paren
+    if (open < end) {
+      if (cursor.space < open + 2) {
+        cursor.space = indexOrEnd(text, ' ', open + 2)
+      }
+      if (cursor.space < end) {
+        open = text.lastIndexOf(' (', end - 1)
+      }
     }
     if (open > from && open + 2 < end && text.indexOf(')', open) === end) {
       frame.function = text.slice(from, open)
@@ -193,6 +214,7 @@ export function parseError(error: unknown): ParsedTrace[] {
 export function parseRawStackTrace(stacktrace: string): ParsedTrace[] {
   const trace: ParsedTrace[] = []
   const length = stacktrace.length
+  const cursor: Cursor = { paren: -1, space: -1 }
   for (let start = 0, next = 0; start < length; start = next) {
     let end = stacktrace.indexOf('\n', start)
     if (end < 0) {
@@ -211,7 +233,7 @@ export function parseRawStackTrace(stacktrace: string): ParsedTrace[] {
       continue
     }
 
-    const frame = parseFrame(stacktrace, at + 3, end) ?? { source: '' }
+    const frame = parseFrame(stacktrace, at + 3, end, cursor) ?? { source: '' }
     if (frame.source === SELF_URL) {
       continue
     }
