@@ -51,7 +51,7 @@
     "vitest": "4.1.11"
   },
   "simple-git-hooks": {
-    "pre-commit": "npx nano-staged"
+    "pre-commit": "pnpm nano-staged"
   },
   "nano-staged": {
     "*.{js,ts,mjs,cjs,json,.*rc}": [
