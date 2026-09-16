@@ -1,69 +1,97 @@
 const SELF_URL = import.meta.url
-const WINDOWS_DRIVE_RE = /^[a-z]:[/\\]/iu
 /** Sources with no file information, including JSC's `native`, `(1:11)` and `(:0)` frames. */
 const NATIVE_SOURCE_RE = /^(?:<anonymous>|native|unknown|:?\d+(?::\d+)?)$/u
+
+function isSlash(code: number): boolean {
+  return code === 47 || code === 92
+}
 
 function isDigit(code: number): boolean {
   return code > 47 && code < 58
 }
 
+/** Matches the characters removed by `String.prototype.trim`. */
+function isSpace(code: number): boolean {
+  if (code < 128) {
+    return code === 32 || (code > 8 && code < 14)
+  }
+  return !String.fromCharCode(code).trim()
+}
+
 /**
- * Parses the contents of a `fn (source)` (or `source`) frame, using string scanning rather
+ * Parses the `fn (source)` (or `source`) frame found in `text[from, to)`, using string scanning rather
  * than a regular expression, since the equivalent pattern requires backtracking and is
  * vulnerable to polynomial-time matching on hostile input.
  */
-function parseFrame(rest: string): ParsedTrace | undefined {
+function parseFrame(text: string, from: number, to: number): ParsedTrace | undefined {
   const frame: ParsedTrace = { function: undefined, source: '' }
 
-  if (rest.startsWith('async ')) {
+  if (text.startsWith('async ', from)) {
     frame.isAsync = true
-    rest = rest.slice(6)
+    from += 6
   }
-  if (rest.startsWith('new ')) {
+  if (text.startsWith('new ', from)) {
     frame.isConstructor = true
-    rest = rest.slice(4)
+    from += 4
   }
 
-  let src: string
-  if (rest.endsWith(')')) {
-    const open = rest.lastIndexOf(' (')
-    const inner = open > 0 ? rest.slice(open + 2, -1) : ''
-    if (inner && !inner.includes(')')) {
-      frame.function = rest.slice(0, open)
-      src = inner
+  let start = from
+  let end = to
+  if (text.charCodeAt(end - 1) === 41) {
+    end--
+    // forward search, since function names are short and sources long; when the candidate
+    // source contains a space the last ` (` is found by scanning backwards instead
+    let open = text.indexOf(' (', from)
+    const space = text.indexOf(' ', open + 2)
+    if (space >= 0 && space < end) {
+      open = text.lastIndexOf(' (', end - 1)
+    }
+    if (open > from && open + 2 < end && text.indexOf(')', open) === end) {
+      frame.function = text.slice(from, open)
+      start = open + 2
     }
     else {
-      src = parseEvalFrame(rest, frame)
-      if (!src) {
+      text = text.slice(from, to)
+      start = parseEvalFrame(text, frame)
+      if (start < 0) {
         return
       }
+      end = text.indexOf(')', start)
     }
   }
-  else if (!rest || /\s/u.test(rest)) {
+  else if (from >= to || /\s/u.test(text.slice(from, to))) {
     return
-  }
-  else {
-    src = rest
   }
 
   // trailing `:line:column`
-  let column = src.length
-  while (isDigit(src.charCodeAt(column - 1))) {
-    column--
+  let column = end
+  let columnValue = 0
+  let scale = 1
+  let code = text.charCodeAt(column - 1)
+  while (isDigit(code)) {
+    columnValue += (code - 48) * scale
+    scale *= 10
+    code = text.charCodeAt(--column - 1)
   }
-  if (column < src.length && src.charCodeAt(column - 1) === 58) {
+  if (column < end && code === 58) {
     let line = column - 1
-    while (isDigit(src.charCodeAt(line - 1))) {
-      line--
+    let lineValue = 0
+    scale = 1
+    code = text.charCodeAt(line - 1)
+    while (isDigit(code)) {
+      lineValue += (code - 48) * scale
+      scale *= 10
+      code = text.charCodeAt(--line - 1)
     }
-    if (line < column - 1 && line > 1 && src.charCodeAt(line - 1) === 58) {
-      frame.line = +src.slice(line, column - 1)
-      frame.column = +src.slice(column)
-      src = src.slice(0, line - 1)
+    if (line < column - 1 && line > start + 1 && code === 58) {
+      frame.line = lineValue
+      frame.column = columnValue
+      end = line - 1
     }
   }
 
-  if (NATIVE_SOURCE_RE.test(src)) {
+  const src = text.slice(start, end)
+  if (src.length < 20 && NATIVE_SOURCE_RE.test(src)) {
     frame.isNative = true
   }
 
@@ -75,21 +103,22 @@ function parseFrame(rest: string): ParsedTrace | undefined {
 /**
  * Resolves an `eval` frame, such as `eval (eval at fn (file:1:2), <anonymous>:3:4)`, to the
  * innermost real source location, discarding the position within the evaluated code since
- * it cannot be resolved to a file. Returns an empty string for other frames.
+ * it cannot be resolved to a file. Returns the index at which the source starts, or -1 for
+ * other frames.
  */
-function parseEvalFrame(rest: string, frame: ParsedTrace): string {
+function parseEvalFrame(rest: string, frame: ParsedTrace): number {
   const evalAt = rest.lastIndexOf('eval at ')
   const open = evalAt < 0 ? -1 : rest.indexOf('(', evalAt)
   const close = open < 0 ? -1 : rest.indexOf(')', open)
-  const source = close < 0 ? '' : rest.slice(open + 1, close)
-  if (source) {
-    const origin = rest.indexOf(' (eval at ')
-    frame.isEval = true
-    if (origin > 0) {
-      frame.function = rest.slice(0, origin)
-    }
+  if (close - open < 2) {
+    return -1
   }
-  return source
+  const origin = rest.indexOf(' (eval at ')
+  frame.isEval = true
+  if (origin > 0) {
+    frame.function = rest.slice(0, origin)
+  }
+  return open + 1
 }
 
 /**
@@ -101,20 +130,20 @@ function parseEvalFrame(rest: string, frame: ParsedTrace): string {
 function toFileURL(source: string): string {
   const first = source.charCodeAt(0)
   let prefix = 'file:///'
-  if (first === 47 || first === 92) {
+  if (isSlash(first)) {
     prefix = 'file://'
     const second = source.charCodeAt(1)
-    if (second === 47 || second === 92) {
+    if (isSlash(second)) {
       if (source.charCodeAt(2) === 46) {
         return source
       }
       source = source.slice(2)
     }
   }
-  else if (!WINDOWS_DRIVE_RE.test(source)) {
+  else if (((first | 32) < 97 || (first | 32) > 122) || source.charCodeAt(1) !== 58 || !isSlash(source.charCodeAt(2))) {
     return source
   }
-  return prefix + source.replaceAll('\\', '/')
+  return prefix + (source.includes('\\') ? source.replaceAll('\\', '/') : source)
 }
 
 export interface ParsedTrace {
@@ -163,20 +192,31 @@ export function parseError(error: unknown): ParsedTrace[] {
  */
 export function parseRawStackTrace(stacktrace: string): ParsedTrace[] {
   const trace: ParsedTrace[] = []
-  for (const rawLine of stacktrace.split('\n')) {
+  const length = stacktrace.length
+  for (let start = 0, next = 0; start < length; start = next) {
+    let end = stacktrace.indexOf('\n', start)
+    if (end < 0) {
+      end = length
+    }
+    next = end + 1
     // frames are indented, unlike the `Error: message` header
-    const line = rawLine.trimEnd()
-    const rest = line.trimStart()
-    if (rest.length === line.length || !rest.startsWith('at ')) {
+    let at = start
+    while (at < end && isSpace(stacktrace.charCodeAt(at))) {
+      at++
+    }
+    while (end > at && isSpace(stacktrace.charCodeAt(end - 1))) {
+      end--
+    }
+    if (at === start || end - at < 3 || !stacktrace.startsWith('at ', at)) {
       continue
     }
 
-    const frame = parseFrame(rest.slice(3)) ?? { source: '' }
+    const frame = parseFrame(stacktrace, at + 3, end) ?? { source: '' }
     if (frame.source === SELF_URL) {
       continue
     }
 
-    frame.raw = line
+    frame.raw = stacktrace.slice(start, end)
     trace.push(frame)
   }
 
