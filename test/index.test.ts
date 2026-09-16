@@ -9,7 +9,7 @@ describe('errx', () => {
       column: typeof t.column === 'number' ? '<number>' : undefined,
       line: typeof t.line === 'number' ? '<number>' : undefined,
       raw: typeof t.raw === 'string' ? '<string>' : undefined,
-      source: t.source.replace(/^(.*node_modules\/)+/, ''),
+      source: t.source.replace(/^(.*node_modules\/)+/, '').replace(/\.[\w-]{8}\.js$/, '.js'),
     }))
     expect(trace).toMatchInlineSnapshot(`
       [
@@ -25,21 +25,21 @@ describe('errx', () => {
           "function": undefined,
           "line": "<number>",
           "raw": "<string>",
-          "source": "@vitest/runner/dist/chunk-artifact.js",
+          "source": "vitest/dist/chunks/run.js",
         },
         {
           "column": "<number>",
           "function": undefined,
           "line": "<number>",
           "raw": "<string>",
-          "source": "@vitest/runner/dist/chunk-artifact.js",
+          "source": "vitest/dist/chunks/run.js",
         },
         {
           "column": "<number>",
           "function": undefined,
           "line": "<number>",
           "raw": "<string>",
-          "source": "@vitest/runner/dist/chunk-artifact.js",
+          "source": "vitest/dist/chunks/run.js",
         },
         {
           "column": undefined,
@@ -55,14 +55,14 @@ describe('errx', () => {
           "function": "runWithCancel",
           "line": "<number>",
           "raw": "<string>",
-          "source": "@vitest/runner/dist/chunk-artifact.js",
+          "source": "vitest/dist/chunks/run.js",
         },
         {
           "column": "<number>",
           "function": undefined,
           "line": "<number>",
           "raw": "<string>",
-          "source": "@vitest/runner/dist/chunk-artifact.js",
+          "source": "vitest/dist/chunks/run.js",
         },
         {
           "column": undefined,
@@ -521,31 +521,31 @@ not a frame at all
 })
 
 describe('parseStackTrace', () => {
-  it('parses vitest', () => {
-    expect(parseRawStackTrace(vitestTrace)).toMatchFileSnapshot('__snapshots__/vitest.json5')
+  it('parses vitest', async () => {
+    await expect(parseRawStackTrace(vitestTrace)).toMatchFileSnapshot('__snapshots__/vitest.json5')
   })
-  it('parses jiti', () => {
-    expect(parseRawStackTrace(jitiTrace)).toMatchFileSnapshot('__snapshots__/jiti.json5')
+  it('parses jiti', async () => {
+    await expect(parseRawStackTrace(jitiTrace)).toMatchFileSnapshot('__snapshots__/jiti.json5')
   })
-  it('parses bun', () => {
-    expect(parseRawStackTrace(bunTrace)).toMatchFileSnapshot('__snapshots__/bun.json5')
+  it('parses bun', async () => {
+    await expect(parseRawStackTrace(bunTrace)).toMatchFileSnapshot('__snapshots__/bun.json5')
   })
-  it('parses older bun', () => {
-    expect(parseRawStackTrace(bunLegacyTrace)).toMatchFileSnapshot('__snapshots__/bun-legacy.json5')
+  it('parses older bun', async () => {
+    await expect(parseRawStackTrace(bunLegacyTrace)).toMatchFileSnapshot('__snapshots__/bun-legacy.json5')
   })
-  it('parses node esm', () => {
-    expect(parseRawStackTrace(nodeEsmTrace)).toMatchFileSnapshot('__snapshots__/node-esm.json5')
+  it('parses node esm', async () => {
+    await expect(parseRawStackTrace(nodeEsmTrace)).toMatchFileSnapshot('__snapshots__/node-esm.json5')
   })
-  it('parses node cjs', () => {
-    expect(parseRawStackTrace(nodeCjsTrace)).toMatchFileSnapshot('__snapshots__/node-cjs.json5')
+  it('parses node cjs', async () => {
+    await expect(parseRawStackTrace(nodeCjsTrace)).toMatchFileSnapshot('__snapshots__/node-cjs.json5')
   })
-  it('parses node 22 esm', () => {
-    expect(parseRawStackTrace(node22EsmTrace)).toMatchFileSnapshot('__snapshots__/node-22-esm.json5')
+  it('parses node 22 esm', async () => {
+    await expect(parseRawStackTrace(node22EsmTrace)).toMatchFileSnapshot('__snapshots__/node-22-esm.json5')
   })
-  it('parses deno', () => {
-    expect(parseRawStackTrace(denoTrace)).toMatchFileSnapshot('__snapshots__/deno.json5')
+  it('parses deno', async () => {
+    await expect(parseRawStackTrace(denoTrace)).toMatchFileSnapshot('__snapshots__/deno.json5')
   })
-  it('parses deno internals', () => {
-    expect(parseRawStackTrace(denoApiTrace)).toMatchFileSnapshot('__snapshots__/deno-api.json5')
+  it('parses deno internals', async () => {
+    await expect(parseRawStackTrace(denoApiTrace)).toMatchFileSnapshot('__snapshots__/deno-api.json5')
   })
 })
