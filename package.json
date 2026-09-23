@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "9.5.1",
-    "@types/node": "26.5.1",
+    "@types/node": "26.6.2",
     "@vitest/coverage-v8": "5.0.1",
     "eslint": "10.11.0",
     "nano-staged": "1.0.2",
